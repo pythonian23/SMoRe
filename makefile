@@ -1,6 +1,6 @@
 install: format
-	go install ./cmd/smore
+	@go install ./cmd/smore
 format:
-	gofmt -w .
-	goimports -w .
-	go mod tidy
+	@gofmt -w .
+	@goimports -w .
+	@go mod tidy
