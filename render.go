@@ -1,15 +1,23 @@
 package smore
 
 import (
+	"log"
 	"strings"
 )
 
-func tokenSplit(token string, parts []string) []string {
+func tokenSplit(token string, tokens, parts []string) []string {
 	var out = make([]string, 0, cap(parts))
+PartLoop:
 	for _, part := range parts {
+		for _, t := range tokens {
+			if part == t {
+				out = append(out, part)
+				continue PartLoop
+			}
+		}
 		split := strings.Split(part, token)
 		for i, s := range split {
-			if i != 0 && i != len(split)-1 {
+			if i != len(split)-1 {
 				out = append(out, s, token)
 			} else {
 				out = append(out, s)
@@ -21,15 +29,20 @@ func tokenSplit(token string, parts []string) []string {
 
 func Render(md string) string {
 	var parts = []string{md}
-	parts = tokenSplit("```", parts) // codeBlock
-	parts = tokenSplit("\n\n", parts)
-	parts = tokenSplit("**", parts) // boldA
-	parts = tokenSplit("__", parts) // underline
-	parts = tokenSplit("\n", parts)
-	parts = tokenSplit("*", parts)  // italicA
-	parts = tokenSplit("_", parts)  // italicU
-	parts = tokenSplit("`", parts)  // code
-	parts = tokenSplit("\\", parts) // escaped
+	var tokens = []string{
+		"```", // codeBlock
+		"\n\n",
+		"**", // boldA
+		"__", // underline
+		"\n",
+		"*",  // italicA
+		"_",  // italicU
+		"`",  // code
+		"\\", // escaped
+	}
+	for _, token := range tokens {
+		parts = tokenSplit(token, tokens, parts)
+	}
 
 	var out string
 	var (
@@ -90,6 +103,10 @@ func Render(md string) string {
 				// escaped start
 			}
 			escaped = !escaped
+		case "\n\n":
+			out += "\n"
+		case "\n":
+			out += " "
 		default:
 			out += part
 		}
