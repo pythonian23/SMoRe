@@ -2,10 +2,13 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
 
 	smore "github.com/pythonian23/SMoRe"
 )
 
 func main() {
-	fmt.Println(smore.Render("# Hi!\nhehehe*sss*__aaa__jjjj"))
+	b, _ := ioutil.ReadAll(os.Stdin)
+	fmt.Println(smore.Render(string(b)))
 }
