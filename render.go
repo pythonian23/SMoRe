@@ -111,11 +111,11 @@ func Render(md string) string {
 		case (styleReset || (current.boldA != previous.boldA)) && current.boldA:
 			escapes = append(escapes, "1")
 		case (styleReset || (current.underline != previous.underline)) && current.underline:
-			escapes = append(escapes, "3")
+			escapes = append(escapes, "4")
 		case (styleReset || (current.italicA != previous.italicA)) && current.italicA:
 			fallthrough
 		case (styleReset || (current.italicU != previous.italicU)) && current.italicU:
-			escapes = append(escapes, "4")
+			escapes = append(escapes, "3")
 		case (current.codeBlock != previous.codeBlock) && current.codeBlock:
 		case (current.code != previous.code) && current.code:
 		}
