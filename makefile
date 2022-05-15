@@ -3,3 +3,4 @@ install: format
 format:
 	gofmt -w .
 	goimports -w .
+	go mod tidy
