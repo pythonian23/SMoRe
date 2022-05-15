@@ -1,3 +1,3 @@
-module github.com/pythonian23/smore
+module github.com/pythonian23/SMoRe
 
-go 1.17
+go 1.18
