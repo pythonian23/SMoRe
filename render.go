@@ -1,7 +1,6 @@
 package smore
 
 import (
-	"log"
 	"strings"
 )
 
