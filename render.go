@@ -39,6 +39,9 @@ var tokens = [...]string{
 }
 
 func escape(values ...string) string {
+	if len(values) == 0 {
+		return ""
+	}
 	return "\u001b[" + strings.Join(values, ";") + "m"
 }
 
@@ -49,7 +52,6 @@ type state struct {
 	italicA   bool
 	italicU   bool
 	code      bool
-	escaped   bool
 }
 
 func Render(md string) string {
@@ -60,13 +62,15 @@ func Render(md string) string {
 	}
 
 	var out string
+	var escaped bool
 	var current = state{}
 	var previous = state{}
 	for _, part := range parts {
-		if current.escaped || (current.codeBlock && part != "```") || (current.code && part != "`") {
+		if escaped || (current.codeBlock && part != "```") || (current.code && part != "`") {
 			out += part
 			continue
 		}
+
 		switch part {
 		case "```":
 			current.codeBlock = !current.codeBlock
@@ -81,7 +85,7 @@ func Render(md string) string {
 		case "`":
 			current.code = !current.code
 		case "\\":
-			current.escaped = !current.escaped
+			escaped = !escaped
 		case "\n\n":
 			out += "\n"
 		case "\n":
@@ -89,16 +93,34 @@ func Render(md string) string {
 		default:
 			out += part
 		}
-		previous = current
+
+		var escapes []string
+		var styleReset bool
 		switch {
-		case current.codeBlock != previous.codeBlock:
-		case current.boldA != previous.boldA:
-		case current.underline != previous.underline:
-		case current.italicA != previous.italicA:
-		case current.italicU != previous.italicU:
-		case current.code != previous.code:
-		case current.escaped != previous.escaped:
+		case (current.boldA != previous.boldA) && !current.boldA:
+			fallthrough
+		case (current.underline != previous.underline) && !current.underline:
+			fallthrough
+		case (current.italicA != previous.italicA) && !current.italicA:
+			fallthrough
+		case (current.italicU != previous.italicU) && !current.italicU:
+			escapes = append(escapes, "0")
+			styleReset = true
+		case (current.codeBlock != previous.codeBlock) && !current.codeBlock:
+		case (current.code != previous.code) && !current.code:
+		case (styleReset || (current.boldA != previous.boldA)) && current.boldA:
+			escapes = append(escapes, "1")
+		case (styleReset || (current.underline != previous.underline)) && current.underline:
+			escapes = append(escapes, "3")
+		case (styleReset || (current.italicA != previous.italicA)) && current.italicA:
+			fallthrough
+		case (styleReset || (current.italicU != previous.italicU)) && current.italicU:
+			escapes = append(escapes, "4")
+		case (current.codeBlock != previous.codeBlock) && current.codeBlock:
+		case (current.code != previous.code) && current.code:
 		}
+		out += escape(escapes...)
+		previous = current
 	}
 	return out
 }
