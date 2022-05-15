@@ -4,7 +4,7 @@ import (
 	"strings"
 )
 
-func tokenSplit(token string, tokens, parts []string) []string {
+func tokenSplit(token string, parts []string) []string {
 	var out = make([]string, 0, cap(parts))
 PartLoop:
 	for _, part := range parts {
@@ -26,88 +26,78 @@ PartLoop:
 	return out
 }
 
+var tokens = [...]string{
+	"```", // codeBlock
+	"\n\n",
+	"**", // boldA
+	"__", // underline
+	"\n",
+	"*",  // italicA
+	"_",  // italicU
+	"`",  // code
+	"\\", // escaped
+}
+
+func escape(values ...string) string {
+	return "\u001b[" + strings.Join(values, ";") + "m"
+}
+
+type state struct {
+	codeBlock bool
+	boldA     bool
+	underline bool
+	italicA   bool
+	italicU   bool
+	code      bool
+	escaped   bool
+}
+
 func Render(md string) string {
 	var parts = []string{md}
-	var tokens = []string{
-		"```", // codeBlock
-		"\n\n",
-		"**", // boldA
-		"__", // underline
-		"\n",
-		"*",  // italicA
-		"_",  // italicU
-		"`",  // code
-		"\\", // escaped
-	}
+
 	for _, token := range tokens {
-		parts = tokenSplit(token, tokens, parts)
+		parts = tokenSplit(token, parts)
 	}
 
 	var out string
-	var (
-		codeBlock, boldA, underline, italicA, italicU, code, escaped bool
-	)
+	var current = state{}
+	var previous = state{}
 	for _, part := range parts {
-		if escaped || (codeBlock && part != "```") || (code && part != "`") {
+		if current.escaped || (current.codeBlock && part != "```") || (current.code && part != "`") {
 			out += part
 			continue
 		}
 		switch part {
 		case "```":
-			if codeBlock {
-				// codeBlock terminate
-			} else {
-				// codeBlock start
-			}
-			codeBlock = !codeBlock
+			current.codeBlock = !current.codeBlock
 		case "**":
-			if boldA {
-				// boldA terminate
-			} else {
-				// boldA start
-			}
-			boldA = !boldA
+			current.boldA = !current.boldA
 		case "__":
-			if underline {
-				// underline terminate
-			} else {
-				// underline start
-			}
-			underline = !underline
+			current.underline = !current.underline
 		case "*":
-			if italicA {
-				// italicA terminate
-			} else {
-				// italicA start
-			}
-			italicA = !italicA
+			current.italicA = !current.italicA
 		case "_":
-			if italicU {
-				// italicU terminate
-			} else {
-				// italicU start
-			}
-			italicU = !italicU
+			current.italicU = !current.italicU
 		case "`":
-			if code {
-				// code terminate
-			} else {
-				// code start
-			}
-			code = !code
+			current.code = !current.code
 		case "\\":
-			if escaped {
-				// escaped terminate
-			} else {
-				// escaped start
-			}
-			escaped = !escaped
+			current.escaped = !current.escaped
 		case "\n\n":
 			out += "\n"
 		case "\n":
 			out += " "
 		default:
 			out += part
+		}
+		previous = current
+		switch {
+		case current.codeBlock != previous.codeBlock:
+		case current.boldA != previous.boldA:
+		case current.underline != previous.underline:
+		case current.italicA != previous.italicA:
+		case current.italicU != previous.italicU:
+		case current.code != previous.code:
+		case current.escaped != previous.escaped:
 		}
 	}
 	return out
