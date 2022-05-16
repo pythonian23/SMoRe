@@ -38,9 +38,14 @@ var tokens = [...]string{
 	"\\", // escaped
 }
 
+var debug = false
+
 func escape(values ...string) string {
 	if len(values) == 0 {
 		return ""
+	}
+	if debug {
+		return "\u001b[" + strings.Join(values, ";") + "m[" + strings.Join(values, ",") + "]"
 	}
 	return "\u001b[" + strings.Join(values, ";") + "m"
 }
@@ -62,13 +67,40 @@ func Render(md string) string {
 	}
 
 	var out string
+	var headerLevel int
 	var escaped bool
 	var current = state{}
 	var previous = state{}
-	for _, part := range parts {
+	for i, part := range parts {
+		var escapes []string
+		var styleReset bool
+		header := headerLevel > 0
+
 		if escaped || (current.codeBlock && part != "```") || (current.code && part != "`") {
 			out += part
 			continue
+		}
+
+		if i == 0 || (parts[i-1] == "\n" || parts[i-1] == "\n\n") {
+			if strings.HasPrefix(part, "# ") {
+				headerLevel = 1
+				if i != 0 {
+					out += "\n"
+				}
+				out += escape("1", "4", "42")
+			} else if strings.HasPrefix(part, "## ") {
+				if i != 0 {
+					out += "\n"
+				}
+				headerLevel = 2
+				out += escape("43")
+			} else if strings.HasPrefix(part, "### ") {
+				if i != 0 {
+					out += "\n"
+				}
+				headerLevel = 3
+				out += escape("44", "2")
+			}
 		}
 
 		switch part {
@@ -87,15 +119,22 @@ func Render(md string) string {
 		case "\\":
 			escaped = !escaped
 		case "\n\n":
+			if header {
+				headerLevel = 0
+				out += escape("0")
+			}
 			out += "\n"
 		case "\n":
-			out += " "
+			if header {
+				headerLevel = 0
+				out += escape("0") + "\n"
+			} else {
+				out += " "
+			}
 		default:
 			out += part
 		}
 
-		var escapes []string
-		var styleReset bool
 		switch {
 		case (current.boldA != previous.boldA) && !current.boldA:
 			fallthrough
@@ -119,6 +158,16 @@ func Render(md string) string {
 		case (current.codeBlock != previous.codeBlock) && current.codeBlock:
 		case (current.code != previous.code) && current.code:
 		}
+		if styleReset && header {
+			if headerLevel == 1 {
+				escapes = append(escapes, "1", "4", "42")
+			} else if headerLevel == 2 {
+				escapes = append(escapes, "43")
+			} else if headerLevel == 3 {
+				escapes = append(escapes, "44", "2")
+			}
+		}
+
 		out += escape(escapes...)
 		previous = current
 	}
