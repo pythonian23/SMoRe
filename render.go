@@ -27,7 +27,9 @@ PartLoop:
 }
 
 var tokens = [...]string{
-	"```", // codeBlock
+	"```",  // codeBlock
+	"\n* ", // uList
+	"\n- ", // uList (same variable as above)
 	"\n\n",
 	"**", // boldA
 	"__", // underline
@@ -106,6 +108,15 @@ func Render(md string) string {
 		switch part {
 		case "```":
 			current.codeBlock = !current.codeBlock
+		case "\n* ":
+			fallthrough
+		case "\n- ":
+			if header {
+				headerLevel = 0
+				header = false
+			}
+			out += escape("0", "1") + "\n - " + escape("0")
+			styleReset = true
 		case "**":
 			current.boldA = !current.boldA
 		case "__":
